@@ -1,5 +1,5 @@
-mptun : mptun.c
+mptun: mptun.c
 	gcc -o $@ $^ -g -Wall
 
-clean :
+clean:
 	rm mptun
