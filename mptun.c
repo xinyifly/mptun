@@ -641,11 +641,9 @@ choose_remote(struct tundev *tdev) {
 
 // forward ip packet from tun to internet with address
 static void
-tun_to_inet(struct tundev *tdev, fd_set *wt) {
+tun_to_inet(struct tundev *tdev, fd_set *wt, int localindex, int remoteindex) {
 	int tunfd = tdev->tunfd;
-	int localindex = choose_local(tdev, wt);
 	int inetfd = tdev->localfd[localindex];
-	int remoteindex = choose_remote(tdev);
 	SOCKADDR * addr = &tdev->remote[remoteindex];
 	char buf[BUFF_SIZE], outbuf[BUFF_SIZE];
 	ssize_t n;
@@ -680,6 +678,16 @@ tun_to_inet(struct tundev *tdev, fd_set *wt) {
 		}
 	}
 	tdev->out[remoteindex] += n;
+}
+
+static void
+tun_to_all_inet(struct tundev *tdev, fd_set *wt) {
+	int localindex = choose_local(tdev, wt);
+  int i;
+  for (i=0;i<tdev->remote_n;i++) {
+    int remoteindex = i;
+    tun_to_inet(tdev, wt, localindex, remoteindex);
+  }
 }
 
 static void
@@ -735,7 +743,7 @@ forwarding(struct tundev *tdev, int maxrd, fd_set *rdset, int maxwt, fd_set *wts
 		if (tdev->remote_n == 0) {
 			drop_tun(tdev);
 		} else {
-			tun_to_inet(tdev, &wt);
+			tun_to_all_inet(tdev, &wt);
 		}
 	}
 }
